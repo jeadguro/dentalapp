@@ -17,30 +17,46 @@ function Loading() {
   );
 }
 
+/* ----------------------------- STAFF ROUTE ----------------------------- */
 export function StaffRoute({ children }) {
   const { user, loading, isStaff } = useAuth();
   const location = useLocation();
 
   if (loading) return <Loading />;
+
+  // Si no está logueado → login staff
   if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
+
+  // Si está logueado pero NO es staff → portal del paciente
   if (!isStaff) return <Navigate to="/patient-portal" replace />;
+
   return children;
 }
 
+/* ---------------------------- PATIENT ROUTE ---------------------------- */
 export function PatientRoute({ children }) {
-  const { user, loading } = useAuth();
+  const { user, loading, isPatient } = useAuth();
   const location = useLocation();
 
   if (loading) return <Loading />;
+
+  // Si no está logueado → login paciente
   if (!user) return <Navigate to="/patient-login" state={{ from: location }} replace />;
+
+  // Si está logueado pero NO es paciente → dashboard del staff
+  if (!isPatient) return <Navigate to="/dashboard" replace />;
+
   return children;
 }
 
+/* ----------------------------- PUBLIC ROUTE ---------------------------- */
 export function PublicRoute({ children }) {
   const { user, loading, isStaff, isPatient } = useAuth();
 
   if (loading) return <Loading />;
+
   if (user && isStaff) return <Navigate to="/dashboard" replace />;
   if (user && isPatient) return <Navigate to="/patient-portal" replace />;
+
   return children;
 }

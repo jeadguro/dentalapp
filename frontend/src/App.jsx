@@ -11,6 +11,7 @@ import PatientForm from './pages/PatientForm';
 import PatientDetail from './pages/PatientDetail';
 import Consultations from './pages/Consultations';
 import ConsultationForm from './pages/ConsultationForm';
+import ConsultationView from './pages/ConsultationView';
 import Appointments from './pages/Appointments';
 import AppointmentForm from './pages/AppointmentForm';
 import PatientPortal from './pages/PatientPortal';
@@ -36,6 +37,8 @@ export default function App() {
       <Route path="/appointments/new" element={<StaffRoute><Layout><AppointmentForm /></Layout></StaffRoute>} />
 
       <Route path="/patient-portal" element={<PatientRoute><PatientPortal /></PatientRoute>} />
+
+      <Route path="/consultations/:id" element={<StaffRoute><Layout><ConsultationView /></Layout></StaffRoute>}/>
 
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
