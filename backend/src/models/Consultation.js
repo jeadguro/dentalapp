@@ -1,6 +1,21 @@
 // src/models/Consultation.js
 import mongoose from 'mongoose';
 
+const toothSchema = new mongoose.Schema({
+  number: { type: String, required: true },  // 11, 21, 36, etc.
+  status: {
+    type: String,
+    enum: ['healthy', 'caries', 'missing', 'filled', 'fractured', 'other'],
+    default: 'healthy'
+  },
+  notes: { type: String, trim: true },
+  treatments: [{
+    name: String,
+    date: { type: Date, default: Date.now },
+    notes: String
+  }]
+});
+
 const consultationSchema = new mongoose.Schema({
   patient: {
     type: mongoose.Schema.Types.ObjectId,
@@ -28,49 +43,52 @@ const consultationSchema = new mongoose.Schema({
     trim: true,
     maxlength: [2000, 'Las notas no pueden exceder 2000 caracteres']
   },
+
+  // 📸 Fotos de la consulta
   photos: [{
-    url: {
-      type: String,
-      required: true
-    },
-    publicId: {
-      type: String // ID de Cloudinary para poder eliminar
-    },
-    description: {
-      type: String,
-      trim: true
-    },
-    uploadedAt: {
-      type: Date,
-      default: Date.now
-    }
+    url: { type: String, required: true },
+    publicId: { type: String },
+    description: { type: String, trim: true },
+    uploadedAt: { type: Date, default: Date.now }
   }],
-  // Tratamientos realizados (checklist)
+
+  // 🦷 Odontograma - Objeto: { "11": { "top": "caries", "center": "resin" }, ... }
+  odontogram: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
+  },
+
+  // ✔️ Procedimientos adicionales (checklist)
   procedures: [{
     name: String,
-    tooth: String, // Número o nombre del diente
+    tooth: String,
     notes: String
   }],
-  // Costo de la consulta
+
+  // 💲 Costo de la consulta
   cost: {
     type: Number,
     min: 0
   },
-  // Estado de pago
+
+  // 💳 Estado del pago
   paymentStatus: {
     type: String,
     enum: ['pending', 'partial', 'paid'],
     default: 'pending'
   },
-  // Doctor que atendió
+
+  // 👨‍⚕️ Doctor que atendió
   attendedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   },
-  // Próxima cita recomendada
+
+  // 📅 Próxima cita
   nextAppointmentRecommended: {
     type: Date
   }
+
 }, {
   timestamps: true
 });
@@ -81,15 +99,15 @@ consultationSchema.index({ date: -1 });
 
 // Populate automático del paciente
 consultationSchema.pre(/^find/, function(next) {
-  // Solo populate si no se especifica lo contrario
   if (this.options._skipPopulate) return next();
+
   this.populate({
     path: 'patient',
     select: 'name email phone'
   });
+
   next();
 });
 
 const Consultation = mongoose.model('Consultation', consultationSchema);
-
 export default Consultation;
