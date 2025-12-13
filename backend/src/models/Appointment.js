@@ -1,0 +1,153 @@
+// src/models/Appointment.js
+import mongoose from 'mongoose';
+
+const appointmentSchema = new mongoose.Schema({
+  patient: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Patient',
+    required: [true, 'El paciente es requerido']
+  },
+  date: {
+    type: Date,
+    required: [true, 'La fecha es requerida']
+  },
+  endDate: {
+    type: Date
+  },
+  type: {
+    type: String,
+    required: [true, 'El tipo de cita es requerido'],
+    enum: [
+      'checkup',
+      'cleaning',
+      'filling',
+      'extraction',
+      'rootcanal',
+      'crown',
+      'whitening',
+      'orthodontics',
+      'implant',
+      'emergency',
+      'other'
+    ],
+    default: 'checkup'
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'confirmed', 'in-progress', 'done', 'cancelled', 'no-show'],
+    default: 'pending'
+  },
+  notes: {
+    type: String,
+    trim: true,
+    maxlength: [500, 'Las notas no pueden exceder 500 caracteres']
+  },
+  // Doctor asignado (requerido)
+  doctor: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: [true, 'El doctor es requerido']
+  },
+  // ¿Cita creada por el paciente?
+  createdByPatient: {
+    type: Boolean,
+    default: false
+  },
+  // Recordatorios
+  reminderSent: {
+    type: Boolean,
+    default: false
+  },
+  reminderSentAt: Date,
+  reminder24hSent: {
+    type: Boolean,
+    default: false
+  },
+  reminder1hSent: {
+    type: Boolean,
+    default: false
+  },
+  // Motivo de cancelación
+  cancellationReason: {
+    type: String,
+    trim: true
+  },
+  cancelledBy: {
+    type: String,
+    enum: ['patient', 'clinic', null],
+    default: null
+  },
+  cancelledAt: Date
+}, {
+  timestamps: true
+});
+
+// Índices
+appointmentSchema.index({ patient: 1, date: -1 });
+appointmentSchema.index({ doctor: 1, date: 1 });
+appointmentSchema.index({ date: 1 });
+appointmentSchema.index({ status: 1, date: 1 });
+
+// Virtual para duración estimada según tipo
+appointmentSchema.virtual('estimatedDuration').get(function() {
+  const durations = {
+    checkup: 30,
+    cleaning: 45,
+    filling: 60,
+    extraction: 45,
+    rootcanal: 90,
+    crown: 60,
+    whitening: 60,
+    orthodontics: 45,
+    implant: 120,
+    emergency: 30,
+    other: 30
+  };
+  return durations[this.type] || 30;
+});
+
+// Labels en español para tipos
+appointmentSchema.statics.getTypeLabels = function() {
+  return {
+    checkup: 'Revisión general',
+    cleaning: 'Limpieza dental',
+    filling: 'Empaste',
+    extraction: 'Extracción',
+    rootcanal: 'Endodoncia',
+    crown: 'Corona',
+    whitening: 'Blanqueamiento',
+    orthodontics: 'Ortodoncia',
+    implant: 'Implante',
+    emergency: 'Urgencia',
+    other: 'Otro'
+  };
+};
+
+// Labels en español para estados
+appointmentSchema.statics.getStatusLabels = function() {
+  return {
+    pending: 'Pendiente',
+    confirmed: 'Confirmada',
+    'in-progress': 'En progreso',
+    done: 'Completada',
+    cancelled: 'Cancelada',
+    'no-show': 'No asistió'
+  };
+};
+
+// Populate automático
+appointmentSchema.pre(/^find/, function(next) {
+  if (this.options._skipPopulate) return next();
+  this.populate({
+    path: 'patient',
+    select: 'name email phone'
+  }).populate({
+    path: 'doctor',
+    select: 'name email specialty avatar'
+  });
+  next();
+});
+
+const Appointment = mongoose.model('Appointment', appointmentSchema);
+
+export default Appointment;
